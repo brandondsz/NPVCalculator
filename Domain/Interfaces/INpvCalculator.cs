@@ -9,6 +9,6 @@ namespace Domain.Interfaces
 {
     public interface INpvCalculator
     {
-        IEnumerable<NpvResult> Calculate(NpvRequest request);
+        IAsyncEnumerable<NpvResult> CalculateAsync(NpvRequest request, CancellationToken ct = default);
     }
 }

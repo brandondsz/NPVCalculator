@@ -8,6 +8,11 @@ namespace Domain.Models
 {
     public class NpvResult
     {
+        public NpvResult(decimal rate, decimal npv)
+        {
+            this.Rate = rate;
+            this.NPV = npv;
+        }
         public decimal Rate { get; set; }
         public decimal NPV { get; set; }
     }

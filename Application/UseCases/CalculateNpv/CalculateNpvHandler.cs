@@ -3,6 +3,7 @@ using Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,9 +18,14 @@ namespace Application.UseCases.CalculateNpv
             _calculator = calculator;
         }
 
-        public IEnumerable<NpvResult> Handle(NpvRequest request)
+        public async IAsyncEnumerable<NpvResult> HandleAsync(
+            NpvRequest request,
+            [EnumeratorCancellation] CancellationToken ct)
         {
-            return _calculator.Calculate(request);
+            await foreach (var result in _calculator.CalculateAsync(request, ct))
+            {
+                yield return result;
+            }
         }
     }
 }
