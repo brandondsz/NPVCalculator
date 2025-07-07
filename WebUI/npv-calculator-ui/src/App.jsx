@@ -16,7 +16,7 @@ function App() {
       </header>
       
       <main>
-        <NpvCalculator data-testid="npv-calculator" />
+        <NpvCalculator />
       </main>
       
       <footer className="bg-dark text-white py-4 mt-5">
