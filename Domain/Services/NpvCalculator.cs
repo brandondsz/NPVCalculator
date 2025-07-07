@@ -16,7 +16,7 @@ public class NpvCalculator : INpvCalculator
         {
             ct.ThrowIfCancellationRequested();
             var npv = CalculateSingleNpv(request, rate);
-            await Task.Delay(1000, ct); // Simulate processing time
+            await Task.Delay(100, ct); // Simulate processing time
 
             yield return new NpvResult(rate, npv);
         }

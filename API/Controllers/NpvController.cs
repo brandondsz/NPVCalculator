@@ -37,7 +37,7 @@ namespace API.Controllers
         /// <returns>This method does not return a value directly. Instead, it streams NPV calculation results to the client.
         /// Each streamed result is serialized as JSON and sent as a Server-Sent Event.</returns>
         [HttpGet("stream")]
-        public async Task GetNpvStream(
+        public async Task<ActionResult> GetNpvStream(
             [FromQuery] decimal initialInvestment,
             [FromQuery] string cashFlows,
             [FromQuery] decimal lowerBoundRate,
@@ -49,6 +49,9 @@ namespace API.Controllers
             Response.Headers.Add("Cache-Control", "no-cache");
             Response.Headers.Add("Connection", "keep-alive");
 
+            _logger.LogInformation("Received SSE NPV request. InitialInvestment: {InitialInvestment}, CashFlows: {CashFlows}, LowerBoundRate: {Lower}, UpperBoundRate: {Upper}, Increment: {Increment}",
+                initialInvestment, cashFlows, lowerBoundRate, upperBoundRate, increment);
+
             var request = new NpvRequest
             {
                 InitialInvestment = initialInvestment,
@@ -58,12 +61,36 @@ namespace API.Controllers
                 Increment = increment
             };
 
-            await foreach (var result in _handler.HandleAsync(request, ct))
+            try
             {
-                var json = JsonSerializer.Serialize(result);
-                await Response.WriteAsync($"data: {json}\n\n", ct);
-                await Response.Body.FlushAsync(ct);
+                await foreach (var result in _handler.HandleAsync(request, ct))
+                {
+                    var json = JsonSerializer.Serialize(result);
+                    _logger.LogDebug("Streaming NPV result: {Rate}% → {NPV}", result.Rate, result.NPV);
+
+                    await Response.WriteAsync($"data: {json}\n\n", ct);
+                    await Response.Body.FlushAsync(ct);
+                }
+
+                _logger.LogInformation("Completed streaming NPV results.");
+                return new EmptyResult();
+            }
+            catch (DomainValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validation failed in domain logic: {Message}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Client disconnected or request was cancelled.");
+                return new EmptyResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while streaming NPV results.");
+                throw;
             }
         }
+
     }
 }
